@@ -1,0 +1,71 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf" content="{{ csrf_token }}">
+  <title>{% block titulo %}{{ TIENDA_NOMBRE }}{% endblock %} · {{ TIENDA_NOMBRE }}</title>
+  <link rel="icon" href="{% static 'img/logo.svg' %}" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+{% block cuerpo %}
+<header class="nav" id="nav">
+  <div class="contenedor nav-fila">
+    <a class="marca" href="{% url 'inicio' %}">
+      <img src="{% static 'img/logo.svg' %}" alt="Logotipo MAREA">
+      <span>MAREA</span>
+    </a>
+    <button class="nav-toggle" aria-label="Abrir menú" onclick="document.getElementById('nav').classList.toggle('abierto')">☰</button>
+    <nav class="nav-links">
+      {% with ruta=request.resolver_match.url_name %}
+      <a href="{% url 'inicio' %}" class="{% if ruta == 'inicio' or ruta == 'dashboard' %}activo{% endif %}">{% if user.is_staff %}Métricas{% else %}Inicio{% endif %}</a>
+      <a href="{% url 'catalogo' %}" class="{% if ruta == 'catalogo' %}activo{% endif %}">{% if user.is_staff %}Productos{% else %}Catálogo{% endif %}</a>
+      <a href="{% url 'ubicacion' %}" class="{% if ruta == 'ubicacion' %}activo{% endif %}">Mapa</a>
+      <a href="{% url 'blog' %}" class="{% if ruta == 'blog' %}activo{% endif %}">Blog</a>
+      <a href="{% url 'videos' %}" class="{% if ruta == 'videos' %}activo{% endif %}">Videos</a>
+      <a href="{% url 'encuesta' %}" class="{% if ruta == 'encuesta' %}activo{% endif %}">Encuesta</a>
+      <a href="{% url 'fotos' %}" class="{% if ruta == 'fotos' %}activo{% endif %}">Fotos</a>
+      <a href="{% url 'identidad' %}" class="{% if ruta == 'identidad' %}activo{% endif %}">Identidad</a>
+      <a href="{% url 'autora' %}" class="{% if ruta == 'autora' %}activo{% endif %}">Autora</a>
+      {% endwith %}
+    </nav>
+    <div class="nav-usuario">
+      <span class="etiqueta-rol {% if user.is_staff %}admin{% endif %}">{{ user.username }} · {% if user.is_staff %}Admin{% else %}Cliente{% endif %}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="btn btn-contorno btn-chico" type="submit">Salir</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  {% if messages %}
+  <ul class="mensajes">
+    {% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie contenedor">
+  <b>{{ TIENDA_NOMBRE }}</b> — {{ TIENDA_SLOGAN }}
+</footer>
+{% endblock %}
+
+<script>
+  // Token CSRF para las peticiones fetch (mapa, chat, fotos).
+  window.csrf = document.querySelector('meta[name=csrf]').content;
+  window.postJSON = (url, datos) => fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrf},
+    body: JSON.stringify(datos),
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

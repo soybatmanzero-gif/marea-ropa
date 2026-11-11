@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Inicio{% endblock %}
+{% block contenido %}
+
+<section class="carrusel" id="carrusel" aria-roledescription="carrusel">
+  <div class="carrusel-pista">
+
+    <article class="slide slide-turquesa">
+      <span class="burbuja" style="width:14px;height:14px;top:18%;left:44%"></span>
+      <span class="burbuja" style="width:9px;height:9px;top:62%;left:52%"></span>
+      <div>
+        <span class="mono">Nueva colección</span>
+        <h2>Sigue tu<br>propia corriente</h2>
+        <p>Prendas con carácter para quienes no van con el cardumen. Descubre lo nuevo de la temporada.</p>
+        <a class="btn btn-ambar" href="{% url 'catalogo' %}">Ver catálogo →</a>
+      </div>
+    </article>
+
+    <article class="slide slide-pizarra" data-tono="oscuro">
+      <div>
+        <span class="mono">Cerca de ti</span>
+        <h2>¿Qué tan lejos<br>estás de MAREA?</h2>
+        <p>Comparte tu ubicación y te mostramos la distancia a la tienda en el mapa.</p>
+        <a class="btn btn-turquesa" href="{% url 'ubicacion' %}">Abrir el mapa →</a>
+      </div>
+    </article>
+
+    <article class="slide slide-ambar">
+      <div>
+        <span class="mono">Comunidad</span>
+        <h2>Cuéntanos<br>tu estilo</h2>
+        <p>Chatea en el blog, mira nuestros videos, súbenos una foto de tu outfit y responde la encuesta.</p>
+        <a class="btn btn-contorno" href="{% url 'blog' %}">Ir al blog →</a>
+      </div>
+    </article>
+
+  </div>
+  <button class="carrusel-flecha izq" aria-label="Anterior">‹</button>
+  <button class="carrusel-flecha der" aria-label="Siguiente">›</button>
+  <div class="carrusel-puntos"></div>
+</section>
+
+<div class="cabecera-seccion">
+  <div><h2>Categorías</h2><p>Encuentra lo tuyo más rápido.</p></div>
+  <div class="pildoras">
+    {% for clave, nombre in categorias %}<a class="pildora" href="{% url 'catalogo' %}?categoria={{ clave }}">{{ nombre }}</a>{% endfor %}
+  </div>
+</div>
+
+<div class="rejilla rejilla-3">
+  <a class="tarjeta tarjeta-numero" href="{% url 'catalogo' %}"><span class="num">01</span><div><h3>Lo nuevo</h3><p>Las últimas piezas que llegaron a la tienda.</p></div></a>
+  <a class="tarjeta tarjeta-numero" href="{% url 'catalogo' %}"><span class="num">02</span><div><h3>Más pedido</h3><p>Los favoritos de la comunidad MAREA.</p></div></a>
+  <a class="tarjeta tarjeta-numero" href="{% url 'encuesta' %}"><span class="num">03</span><div><h3>Tu opinión</h3><p>Ayúdanos a elegir la próxima colección.</p></div></a>
+</div>
+
+<div class="cabecera-seccion">
+  <div><h2>Destacados</h2><p>Selección de la casa.</p></div>
+  <a class="btn btn-turquesa" href="{% url 'catalogo' %}">Ver todo</a>
+</div>
+<div class="rejilla rejilla-4">
+  {% for p in destacados %}{% include "tienda/_producto_card.html" %}{% empty %}
+  <p>Aún no hay productos. ¡Vuelve pronto!</p>{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const c = document.getElementById('carrusel');
+  const pista = c.querySelector('.carrusel-pista');
+  const total = pista.children.length;
+  const puntos = c.querySelector('.carrusel-puntos');
+  let i = 0, timer;
+  for (let k = 0; k < total; k++) {
+    const b = document.createElement('button');
+    b.setAttribute('aria-label', 'Ir a la diapositiva ' + (k + 1));
+    b.onclick = () => { ir(k); reiniciar(); };
+    puntos.appendChild(b);
+  }
+  function ir(n) {
+    i = (n + total) % total;
+    pista.style.transform = `translateX(-${i * 100}%)`;
+    c.dataset.tono = pista.children[i].dataset.tono || 'claro';
+    [...puntos.children].forEach((b, k) => b.classList.toggle('activo', k === i));
+  }
+  function reiniciar() { clearInterval(timer); timer = setInterval(() => ir(i + 1), 5500); }
+  c.querySelector('.izq').onclick = () => { ir(i - 1); reiniciar(); };
+  c.querySelector('.der').onclick = () => { ir(i + 1); reiniciar(); };
+  c.addEventListener('mouseenter', () => clearInterval(timer));
+  c.addEventListener('mouseleave', reiniciar);
+  ir(0); reiniciar();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Entrar{% endblock %}
+{% block cuerpo %}
+<div class="login-pagina">
+  <section class="login-izq">
+    <div class="login-meta">
+      <img src="{% static 'img/logo.svg' %}" alt="Logotipo MAREA">
+      <span class="mono">Colección<br>Otoño · Invierno</span>
+    </div>
+
+    <h1 class="login-titulo">Marea</h1>
+    <p class="login-sub">{{ TIENDA_SLOGAN }} Entra para ver la colección.</p>
+
+    <div class="login-tarjeta">
+      <h3>Iniciar sesión</h3>
+      <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<ul class="errores">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <div class="campo">
+          <label for="id_username">Usuario</label>
+          <input type="text" name="username" id="id_username" autofocus required autocomplete="username">
+        </div>
+        <div class="campo">
+          <label for="id_password">Contraseña</label>
+          <input type="password" name="password" id="id_password" required autocomplete="current-password">
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-ambar" type="submit">Entrar →</button>
+      </form>
+      <a class="enlace-chico" href="{% url 'registro' %}">¿Primera vez? Crea tu cuenta de cliente</a>
+    </div>
+  </section>
+
+  <section class="login-der">
+    <div class="lectura mono">Observación en vivo<br>Clientes en la corriente</div>
+  </section>
+</div>
+{% endblock %}

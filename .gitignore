@@ -1,0 +1,17 @@
+# entorno virtual y cachés
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# base de datos local y archivos generados
+db.sqlite3
+staticfiles/
+
+# secretos: nunca se suben
+.env
+
+# fotos que toman los usuarios (las prendas y los videos de media/ sí se suben)
+media/fotos/
+
+.vscode/

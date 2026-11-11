@@ -1,0 +1,17 @@
+<article class="tarjeta producto">
+  <div class="producto-img">
+    {% if p.imagen %}<img src="{{ p.imagen.url }}" alt="{{ p.nombre }}">{% else %}<span class="inicial">{{ p.nombre|slice:":1" }}</span>{% endif %}
+  </div>
+  <div class="producto-cuerpo">
+    <div><span class="chip">{{ p.get_categoria_display }}</span> {% if p.destacado %}<span class="chip ambar">Destacado</span>{% endif %}</div>
+    <h3>{{ p.nombre }}</h3>
+    <div class="mono">Talla {{ p.talla }} · {% if p.stock %}{{ p.stock }} en stock{% else %}Agotado{% endif %}</div>
+    <div class="precio">${{ p.precio }}</div>
+    {% if user.is_staff and mostrar_acciones %}
+    <div class="acciones">
+      <a class="btn btn-contorno btn-chico" href="{% url 'producto_editar' p.pk %}">Editar</a>
+      <a class="btn btn-peligro btn-chico" href="{% url 'producto_borrar' p.pk %}">Borrar</a>
+    </div>
+    {% endif %}
+  </div>
+</article>

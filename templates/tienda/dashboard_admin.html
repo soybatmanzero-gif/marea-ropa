@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Métricas{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Panel de administración</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Métricas de MAREA</h1>
+    <p>Resumen de clientes, inventario y opiniones.</p>
+  </div>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+    <a class="btn btn-ambar" href="{% url 'producto_crear' %}">+ Nuevo producto</a>
+    <a class="btn btn-contorno" href="{% url 'catalogo' %}">Gestionar productos</a>
+  </div>
+</div>
+
+<div class="rejilla rejilla-4">
+  <div class="tarjeta kpi"><span class="mono">Clientes registrados</span><div class="valor">{{ total_clientes }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Productos</span><div class="valor ambar">{{ total_productos }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Piezas en stock</span><div class="valor">{{ stock_total }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Mensajes en el blog</span><div class="valor turq">{{ total_mensajes }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Fotos subidas</span><div class="valor">{{ total_fotos }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Encuestas respondidas</span><div class="valor">{{ total_respuestas }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Satisfacción promedio</span><div class="valor ambar">{% if promedio_satisfaccion %}{{ promedio_satisfaccion|floatformat:1 }}<small style="font-size:1.1rem"> / 5</small>{% else %}—{% endif %}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Nos recomendarían</span><div class="valor turq">{% if porcentaje_recomienda is not None %}{{ porcentaje_recomienda }}%{% else %}—{% endif %}</div></div>
+</div>
+
+<div class="rejilla rejilla-2 separado">
+  <div class="tarjeta"><h3>Productos por categoría</h3><div class="grafica"><canvas id="g-categorias"></canvas></div></div>
+  <div class="tarjeta"><h3>Satisfacción de clientes</h3><div class="grafica"><canvas id="g-satisfaccion"></canvas></div></div>
+</div>
+
+<div class="rejilla rejilla-2 separado">
+  <div class="tarjeta">
+    <h3>Ubicaciones recientes de clientes</h3>
+    <p class="ayuda">Distancia promedio a la tienda: <b>{% if promedio_distancia is not None %}{{ promedio_distancia|floatformat:1 }} km{% else %}sin datos{% endif %}</b>{% if categoria_top %} · Categoría favorita: <b>{{ categoria_top }}</b>{% endif %}</p>
+    <table class="tabla">
+      <tr><th>Cliente</th><th>Distancia</th><th>Cuándo</th></tr>
+      {% for u in ubicaciones %}<tr><td>{{ u.usuario.username }}</td><td>{{ u.distancia_km|floatformat:1 }} km</td><td>{{ u.creado|date:"d/m H:i" }}</td></tr>
+      {% empty %}<tr><td colspan="3">Todavía nadie ha compartido su ubicación.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="tarjeta">
+    <h3>Últimos comentarios de la encuesta</h3>
+    <table class="tabla">
+      <tr><th>Cliente</th><th>Nota</th><th>Comentario</th></tr>
+      {% for r in respuestas %}<tr><td>{{ r.usuario.username }}</td><td>{{ r.satisfaccion }}/5</td><td>{{ r.comentario|default:"—"|truncatechars:60 }}</td></tr>
+      {% empty %}<tr><td colspan="3">Aún no hay respuestas.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+{{ datos_graficas|json_script:"datos-graficas" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const d = JSON.parse(document.getElementById('datos-graficas').textContent);
+  const opciones = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
+  new Chart(document.getElementById('g-categorias'), {
+    type: 'bar',
+    data: { labels: d.categorias.labels, datasets: [{ data: d.categorias.values,
+      backgroundColor: ['#22323d', '#4a7a99', '#5cc8cc', '#c9831f', '#82d6d9'], borderRadius: 8 }] },
+    options: opciones,
+  });
+  new Chart(document.getElementById('g-satisfaccion'), {
+    type: 'bar',
+    data: { labels: d.satisfaccion.labels.map(l => l + ' ★'), datasets: [{ data: d.satisfaccion.values,
+      backgroundColor: '#5cc8cc', borderRadius: 8 }] },
+    options: opciones,
+  });
+</script>
+{% endblock %}

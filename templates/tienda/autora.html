@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Autora{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Sobre mí</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Quién hizo MAREA</h1>
+    <p>Datos de la autora del proyecto y ubicación.</p>
+  </div>
+</div>
+
+<section class="tarjeta autora">
+  <img class="autora-foto" src="{% static 'img/autora.jpg' %}" alt="Foto de {{ autora_nombre }}">
+  <div>
+    <h2>{{ autora_nombre }}</h2>
+    <dl class="datos">
+      {% for etiqueta, valor in autora_datos %}{% if valor %}
+      <div><dt>{{ etiqueta }}</dt><dd>{{ valor }}</dd></div>
+      {% endif %}{% endfor %}
+    </dl>
+  </div>
+</section>
+
+<!-- ===== Etapa 1: mapa con iframe ===== -->
+<section class="tarjeta separado" id="ubicacion">
+  <span class="mono">Ubicación</span>
+  <h2>Cómo llegar</h2>
+  <p class="ayuda">MAREA es una tienda virtual. Este es nuestro punto de entrega: {{ ubicacion.direccion }}</p>
+  <iframe class="mapa-caja" src="{{ iframe_url }}" title="Mapa de la ubicación de {{ ubicacion.nombre }}"
+          loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+  <p style="margin:1rem 0 0">
+    <a class="btn btn-turquesa" target="_blank" rel="noopener"
+       href="https://www.google.com/maps/dir/?api=1&destination={{ ubicacion.lat|stringformat:'f' }},{{ ubicacion.lng|stringformat:'f' }}">Cómo llegar en Google Maps →</a>
+  </p>
+</section>
+
+<!-- ===== Etapa 3: mapa interactivo con la Maps JavaScript API ===== -->
+<section class="tarjeta separado" id="mapa-interactivo">
+  <span class="mono">Mapa interactivo</span>
+  <h2>Explora el punto de entrega</h2>
+  <p class="ayuda">Mapa de Google Maps (JavaScript API) con un marcador en la ubicación elegida. Haz clic en el marcador para ver los datos.</p>
+  {% if maps_key %}
+    <div id="mapa-google" class="mapa-caja" aria-label="Mapa interactivo"></div>
+  {% else %}
+    <div class="aviso">
+      Falta configurar la API Key de Google Maps. Agrégala como variable de entorno
+      <code>GOOGLE_MAPS_API_KEY</code> y reinicia el servidor para que aparezca el mapa.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if maps_key %}
+{{ ubicacion|json_script:"ubicacion-datos" }}
+<script>
+  // Si Google rechaza la llave (restricciones mal puestas, API sin habilitar), se avisa en el mapa.
+  window.gm_authFailure = () => {
+    document.getElementById('mapa-google').innerHTML =
+      '<div class="aviso">Google rechazó la API Key. Revisa que la Maps JavaScript API esté habilitada ' +
+      'y que las restricciones de dominio incluyan esta dirección.</div>';
+  };
+
+  async function initMap() {
+    const d = JSON.parse(document.getElementById('ubicacion-datos').textContent);
+    const centro = { lat: d.lat, lng: d.lng };
+    const { Map, InfoWindow } = await google.maps.importLibrary('maps');
+    const mapa = new Map(document.getElementById('mapa-google'), {
+      center: centro, zoom: 15, mapId: 'DEMO_MAP_ID', mapTypeControl: false, streetViewControl: false,
+    });
+
+    let marcador;
+    try {
+      const { AdvancedMarkerElement } = await google.maps.importLibrary('marker');
+      marcador = new AdvancedMarkerElement({ map: mapa, position: centro, title: d.nombre });
+    } catch (e) {
+      marcador = new google.maps.Marker({ map: mapa, position: centro, title: d.nombre });
+    }
+
+    const caja = document.createElement('div');
+    const titulo = document.createElement('strong');
+    titulo.textContent = d.nombre;
+    const texto = document.createElement('div');
+    texto.textContent = d.direccion;
+    caja.append(titulo, texto);
+
+    const info = new InfoWindow({ content: caja });
+    const abrir = () => info.open({ map: mapa, anchor: marcador });
+    abrir();
+    if (marcador.addListener) marcador.addListener('click', abrir);
+  }
+  window.initMap = initMap;
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key={{ maps_key|urlencode }}&callback=initMap&loading=async&v=weekly"></script>
+{% endif %}
+{% endblock %}

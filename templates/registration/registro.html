@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Crear cuenta{% endblock %}
+{% block cuerpo %}
+<div class="login-pagina">
+  <section class="login-izq">
+    <div class="login-meta">
+      <img src="{% static 'img/logo.svg' %}" alt="Logotipo MAREA">
+      <span class="mono">Cuenta de cliente</span>
+    </div>
+    <h1 class="login-titulo" style="font-size: clamp(3rem, 9vw, 6.5rem)">Únete a<br>la corriente</h1>
+
+    <div class="login-tarjeta">
+      <h3>Crear cuenta</h3>
+      <form method="post">
+        {% csrf_token %}
+        {% for campo in form %}
+        <div class="campo">
+          <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+          {{ campo }}
+          {% if campo.help_text %}<div class="ayuda">{{ campo.help_text|safe }}</div>{% endif %}
+          {% if campo.errors %}<ul class="errores">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        <button class="btn btn-ambar" type="submit">Registrarme →</button>
+      </form>
+      <a class="enlace-chico" href="{% url 'login' %}">Ya tengo cuenta</a>
+    </div>
+  </section>
+  <section class="login-der"></section>
+</div>
+{% endblock %}

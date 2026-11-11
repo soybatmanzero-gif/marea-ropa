@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion"><h1 style="font-size:clamp(2rem,4vw,3rem)">{{ titulo }}</h1></div>
+<form method="post" enctype="multipart/form-data" class="tarjeta" style="max-width:640px">
+  {% csrf_token %}
+  {% for campo in form %}
+  <div class="campo">
+    {% if campo.field.widget.input_type == 'checkbox' %}
+      <label style="display:flex;gap:.5rem;align-items:center">{{ campo }} {{ campo.label }}</label>
+    {% else %}
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+      {{ campo }}
+    {% endif %}
+    {% if campo.help_text %}<div class="ayuda">{{ campo.help_text }}</div>{% endif %}
+    {% if campo.errors %}<ul class="errores">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn btn-ambar" type="submit">Guardar</button>
+  <a class="btn btn-contorno" href="{% url 'catalogo' %}">Cancelar</a>
+</form>
+{% endblock %}

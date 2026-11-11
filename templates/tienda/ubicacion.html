@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Mapa{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Ubicación y cercanía</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">¿Qué tan cerca estás?</h1>
+    <p>{{ tienda.nombre }} · Punto de entrega: {{ tienda.direccion }}</p>
+  </div>
+  <button class="btn btn-ambar" id="btn-ubicar" type="button">📍 Capturar mi ubicación</button>
+</div>
+
+<div class="rejilla" style="grid-template-columns: 2fr 1fr">
+  <div id="mapa"></div>
+  <div class="tarjeta">
+    <span class="mono">Distancia al punto de entrega</span>
+    <div class="distancia" id="distancia">{% if ultima %}{{ ultima.distancia_km|floatformat:1 }} km{% else %}—{% endif %}</div>
+    <p id="estado" class="ayuda">{% if ultima %}Última vez que compartiste tu ubicación: {{ ultima.creado|date:"d/m/Y H:i" }}.{% else %}Pulsa el botón y permite el acceso a tu ubicación.{% endif %}</p>
+    <hr style="border:0;border-top:1px solid rgba(34,50,61,.1)">
+    <p class="ayuda">Tu ubicación solo se guarda para calcular la distancia a la tienda y mostrar métricas al administrador.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+  const tienda = [{{ tienda.lat|stringformat:"f" }}, {{ tienda.lng|stringformat:"f" }}];
+  const mapa = L.map('mapa').setView(tienda, 13);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; Colaboradores de OpenStreetMap'
+  }).addTo(mapa);
+  L.marker(tienda).addTo(mapa).bindPopup('<b>{{ tienda.nombre|escapejs }}</b><br>Punto de entrega').openPopup();
+
+  const estado = document.getElementById('estado');
+  const dist = document.getElementById('distancia');
+  const btn = document.getElementById('btn-ubicar');
+  let capaUsuario = null;
+
+  btn.addEventListener('click', () => {
+    if (!navigator.geolocation) { estado.textContent = 'Tu navegador no permite obtener la ubicación.'; return; }
+    estado.textContent = 'Buscando tu ubicación…';
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      try {
+        const r = await postJSON("{% url 'guardar_ubicacion' %}", { lat, lng });
+        const datos = await r.json();
+        if (!r.ok) throw new Error(datos.error || 'Error');
+        dist.textContent = datos.km.toFixed(1) + ' km';
+        estado.textContent = datos.km < 1
+          ? '¡Estás a unos pasos de la tienda!'
+          : 'Estás a ' + datos.km.toFixed(1) + ' km de MAREA.';
+      } catch (e) { estado.textContent = 'No se pudo guardar tu ubicación.'; }
+      if (capaUsuario) capaUsuario.remove();
+      capaUsuario = L.layerGroup([
+        L.circleMarker([lat, lng], { radius: 9, color: '#3aa8b0', fillColor: '#5cc8cc', fillOpacity: .9 }).bindPopup('Tú estás aquí'),
+        L.polyline([[lat, lng], tienda], { color: '#c9831f', dashArray: '6 8', weight: 3 }),
+      ]).addTo(mapa);
+      mapa.fitBounds([[lat, lng], tienda], { padding: [50, 50] });
+    }, (err) => {
+      estado.textContent = err.code === 1
+        ? 'Necesitamos tu permiso para ver la ubicación. Actívalo en el navegador.'
+        : 'No pudimos obtener tu ubicación. Intenta de nuevo.';
+    }, { enableHighAccuracy: true, timeout: 15000 });
+  });
+})();
+</script>
+{% endblock %}

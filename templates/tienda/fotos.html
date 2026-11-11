@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block titulo %}Fotos{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Cámara</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Tu outfit MAREA</h1>
+    <p>Toma una foto con la cámara de tu dispositivo{% if user.is_staff %} · como admin ves las fotos de todos{% endif %}.</p>
+  </div>
+</div>
+
+<div class="rejilla rejilla-2">
+  <section class="tarjeta camara">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" hidden></canvas>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.9rem">
+      <button class="btn btn-turquesa" id="btn-camara" type="button">Encender cámara</button>
+      <button class="btn btn-ambar" id="btn-tomar" type="button" disabled>📸 Tomar foto</button>
+      <label class="btn btn-contorno" style="margin:0">Subir desde galería
+        <input type="file" id="archivo" accept="image/*" hidden>
+      </label>
+    </div>
+    <p id="estado-cam" class="ayuda"></p>
+  </section>
+
+  <section class="tarjeta" id="previa" hidden>
+    <h3>Vista previa</h3>
+    <img id="img-previa" alt="Vista previa de la foto" style="border-radius:16px;width:100%">
+    <div class="campo" style="margin-top:.8rem">
+      <label for="descripcion">Descripción (opcional)</label>
+      <input type="text" id="descripcion" maxlength="120" placeholder="Mi look de hoy">
+    </div>
+    <button class="btn btn-ambar" id="btn-guardar" type="button">Guardar foto</button>
+    <button class="btn btn-contorno" id="btn-descartar" type="button">Descartar</button>
+  </section>
+</div>
+
+<div class="cabecera-seccion"><h2>Galería</h2></div>
+<div class="rejilla galeria">
+  {% for f in fotos %}
+  <figure>
+    <img src="{{ f.imagen.url }}" alt="Foto de {{ f.usuario.username }}" loading="lazy">
+    <figcaption>{{ f.usuario.username }} · {{ f.creado|date:"d/m H:i" }}{% if f.descripcion %}<br>{{ f.descripcion }}{% endif %}</figcaption>
+    {% if f.usuario_id == user.id or user.is_staff %}
+    <form method="post" action="{% url 'borrar_foto' f.pk %}">{% csrf_token %}
+      <button class="btn btn-peligro btn-chico" type="submit">Borrar</button>
+    </form>
+    {% endif %}
+  </figure>
+  {% empty %}<p>Aún no hay fotos.</p>{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const estado = document.getElementById('estado-cam');
+  const previa = document.getElementById('previa');
+  const imgPrevia = document.getElementById('img-previa');
+  let flujo = null, dataUrl = null;
+
+  function mostrarPrevia(url) {
+    dataUrl = url;
+    imgPrevia.src = url;
+    previa.hidden = false;
+  }
+
+  document.getElementById('btn-camara').addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      estado.textContent = 'Tu navegador no permite usar la cámara (necesita HTTPS o localhost). Usa “Subir desde galería”.';
+      return;
+    }
+    try {
+      flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      video.srcObject = flujo;
+      document.getElementById('btn-tomar').disabled = false;
+      estado.textContent = 'Cámara lista.';
+    } catch (e) {
+      estado.textContent = 'No pudimos acceder a la cámara. Revisa los permisos del navegador.';
+    }
+  });
+
+  document.getElementById('btn-tomar').addEventListener('click', () => {
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    mostrarPrevia(canvas.toDataURL('image/jpeg', 0.85));
+  });
+
+  document.getElementById('archivo').addEventListener('change', (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const lector = new FileReader();
+    lector.onload = () => mostrarPrevia(lector.result);
+    lector.readAsDataURL(f);
+  });
+
+  document.getElementById('btn-descartar').addEventListener('click', () => { previa.hidden = true; dataUrl = null; });
+
+  document.getElementById('btn-guardar').addEventListener('click', async () => {
+    if (!dataUrl) return;
+    const r = await postJSON("{% url 'subir_foto' %}", {
+      imagen: dataUrl, descripcion: document.getElementById('descripcion').value,
+    });
+    if (r.ok) { if (flujo) flujo.getTracks().forEach(t => t.stop()); location.reload(); }
+    else { estado.textContent = 'No se pudo guardar la foto. Intenta con una más pequeña.'; }
+  });
+})();
+</script>
+{% endblock %}

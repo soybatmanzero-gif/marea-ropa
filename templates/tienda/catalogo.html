@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Catálogo{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">{% if user.is_staff %}Administración de productos (CRUD){% else %}Colección{% endif %}</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">{% if user.is_staff %}Productos{% else %}Catálogo{% endif %}</h1>
+  </div>
+  {% if user.is_staff %}<a class="btn btn-ambar" href="{% url 'producto_crear' %}">+ Nuevo producto</a>{% endif %}
+</div>
+
+<form method="get" class="tarjeta" style="display:flex;gap:.7rem;flex-wrap:wrap;align-items:end;margin-bottom:1.4rem">
+  <div style="flex:1;min-width:200px"><label for="q">Buscar</label><input type="text" id="q" name="q" value="{{ q }}" placeholder="Playera, vestido..."></div>
+  <div style="min-width:200px"><label for="categoria">Categoría</label>
+    <select id="categoria" name="categoria">
+      <option value="">Todas</option>
+      {% for clave, nombre in categorias %}<option value="{{ clave }}" {% if clave == categoria_activa %}selected{% endif %}>{{ nombre }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-turquesa" type="submit">Filtrar</button>
+</form>
+
+<div class="rejilla rejilla-4">
+  {% for p in productos %}{% include "tienda/_producto_card.html" with mostrar_acciones=True %}
+  {% empty %}<p>No encontramos productos con ese filtro.</p>{% endfor %}
+</div>
+{% endblock %}

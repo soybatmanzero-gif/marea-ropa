@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Blog{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Blog · chat de la comunidad</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Habla con MAREA</h1>
+    <p>Comparte tu estilo, haz preguntas o cuéntanos qué te gustaría ver. Se actualiza solo.</p>
+  </div>
+</div>
+
+<section class="tarjeta chat">
+  <div class="chat-lista" id="lista" aria-live="polite">
+    {% for m in mensajes %}
+    <div class="burbuja-chat {% if m.usuario_id == user.id %}mia{% endif %} {% if m.usuario.is_staff %}staff{% endif %}" data-id="{{ m.id }}">
+      <b>{{ m.usuario.username }}{% if m.usuario.is_staff %} · equipo MAREA{% endif %}</b>
+      {{ m.texto }} <small>{{ m.creado|date:"d/m H:i" }}</small>
+    </div>
+    {% endfor %}
+  </div>
+  <form class="chat-form" id="form-chat" autocomplete="off">
+    <input type="text" id="texto" maxlength="500" placeholder="Escribe un mensaje…" required>
+    <button class="btn btn-ambar" type="submit">Enviar</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const lista = document.getElementById('lista');
+  let ultimo = Math.max(0, ...[...lista.children].map(e => +e.dataset.id || 0));
+
+  function pintar(m) {
+    if (lista.querySelector(`[data-id="${m.id}"]`)) return;
+    const div = document.createElement('div');
+    div.className = 'burbuja-chat' + (m.usuario === "{{ user.username|escapejs }}" ? ' mia' : '') + (m.es_admin ? ' staff' : '');
+    div.dataset.id = m.id;
+    const b = document.createElement('b');
+    b.textContent = m.usuario + (m.es_admin ? ' · equipo MAREA' : '');
+    const t = document.createTextNode(' ' + m.texto + ' ');
+    const s = document.createElement('small');
+    s.textContent = m.hora;
+    div.append(b, t, s);
+    lista.appendChild(div);
+    ultimo = Math.max(ultimo, m.id);
+  }
+  const alFinal = () => { lista.scrollTop = lista.scrollHeight; };
+
+  async function actualizar() {
+    try {
+      const r = await fetch("{% url 'mensajes_api' %}?despues=" + ultimo);
+      if (!r.ok) return;
+      const { mensajes } = await r.json();
+      if (mensajes.length) { mensajes.forEach(pintar); alFinal(); }
+    } catch (e) { /* sin conexión: se reintenta */ }
+  }
+
+  document.getElementById('form-chat').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const campo = document.getElementById('texto');
+    const texto = campo.value.trim();
+    if (!texto) return;
+    campo.value = '';
+    const r = await postJSON("{% url 'enviar_mensaje' %}", { texto });
+    if (r.ok) { pintar(await r.json()); alFinal(); }
+  });
+
+  alFinal();
+  setInterval(actualizar, 3000);
+})();
+</script>
+{% endblock %}

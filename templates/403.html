@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titulo %}Sin permiso{% endblock %}
+{% block contenido %}
+<div class="tarjeta separado" style="max-width:560px">
+  <h2>Esta zona es solo para administradores</h2>
+  <p>Tu cuenta de cliente no tiene permiso para ver esta página.</p>
+  <a class="btn btn-ambar" href="{% url 'inicio' %}">Volver al inicio</a>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titulo %}Identidad{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Identidad de marca</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Así es MAREA</h1>
+    <p>Logotipo, paleta, slogan y tipografías.</p>
+  </div>
+</div>
+
+<div class="rejilla rejilla-2">
+  <section class="tarjeta">
+    <h3>Logotipo / imagotipo</h3>
+    <div style="display:flex;align-items:center;gap:1rem;margin-top:.8rem">
+      <img src="{% static 'img/logo.svg' %}" alt="Imagotipo MAREA" width="110" height="110">
+      <div>
+        <div class="titulo" style="font-size:2.6rem;letter-spacing:.06em">MAREA</div>
+        <span class="mono">Ropa</span>
+      </div>
+    </div>
+    <p class="ayuda" style="margin-top:1rem">Un pez que nada sobre una ola: la prenda que decide ir a contracorriente. El ojo con anillo recuerda la mirada curiosa del cardumen.</p>
+  </section>
+
+  <section class="tarjeta">
+    <h3>Slogan</h3>
+    <div class="titulo" style="font-size:clamp(1.8rem,4vw,2.8rem);margin-top:.6rem;color:var(--ambar)">{{ TIENDA_SLOGAN }}</div>
+    <p class="ayuda">Invita a ser auténtico y a no vestir igual que todos.</p>
+  </section>
+</div>
+
+<section class="tarjeta separado">
+  <h3>Paleta de colores</h3>
+  <div class="muestras" style="margin-top:.8rem">
+    <div class="muestra"><div class="color" style="background:#22323d"></div><div><b>Pizarra</b>#22323D · texto y títulos</div></div>
+    <div class="muestra"><div class="color" style="background:#f6f7f6"></div><div><b>Papel</b>#F6F7F6 · fondo</div></div>
+    <div class="muestra"><div class="color" style="background:#c9831f"></div><div><b>Ámbar</b>#C9831F · botones principales</div></div>
+    <div class="muestra"><div class="color" style="background:#5cc8cc"></div><div><b>Turquesa</b>#5CC8CC · acentos</div></div>
+    <div class="muestra"><div class="color" style="background:#4a7a99"></div><div><b>Marino</b>#4A7A99 · detalles</div></div>
+    <div class="muestra"><div class="color" style="background:#e4f5f6"></div><div><b>Hielo</b>#E4F5F6 · fondos suaves</div></div>
+  </div>
+</section>
+
+<section class="tarjeta separado">
+  <h3>Tipos de letra</h3>
+  <div class="rejilla rejilla-2" style="margin-top:.8rem">
+    <div>
+      <span class="mono">Títulos · Anton</span>
+      <div class="titulo" style="font-size:3rem">Aa Bb Cc 123</div>
+      <p class="ayuda">Condensada y contundente. Se usa en mayúsculas para titulares y precios.</p>
+    </div>
+    <div>
+      <span class="mono">Texto e interfaz · Poppins</span>
+      <div style="font-size:2.2rem;font-weight:600">Aa Bb Cc 123</div>
+      <p class="ayuda">Redondeada y legible. Se usa en párrafos, botones y menús.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Videos{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Videos</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Mira MAREA en movimiento</h1>
+    <p>Desfiles, lookbooks y consejos de estilo.</p>
+  </div>
+</div>
+
+{% if form %}
+<form method="post" class="tarjeta" style="margin-bottom:1.4rem">
+  {% csrf_token %}
+  <h3>Agregar video (admin)</h3>
+  <div class="rejilla rejilla-3">
+    {% for campo in form %}
+    <div class="campo"><label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}
+      {% if campo.errors %}<ul class="errores">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <button class="btn btn-ambar" type="submit">Publicar video</button>
+</form>
+{% endif %}
+
+<div class="rejilla rejilla-videos">
+  {% for v in videos %}
+  <article class="tarjeta">
+    {% if v.embed_url %}
+      <iframe class="video-caja" src="{{ v.embed_url }}" title="{{ v.titulo }}" allowfullscreen loading="lazy"></iframe>
+    {% else %}
+      <video class="video-local" src="{{ v.url }}#t=0.1" controls preload="metadata" playsinline></video>
+    {% endif %}
+    <h3 style="margin-top:.8rem">{{ v.titulo }}</h3>
+    <p class="ayuda">{{ v.descripcion }}</p>
+    {% if user.is_staff %}
+    <form method="post" action="{% url 'video_borrar' v.pk %}">{% csrf_token %}
+      <button class="btn btn-peligro btn-chico" type="submit">Borrar</button>
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <div class="tarjeta"><p>Todavía no hay videos publicados.{% if user.is_staff %} Agrega el primero con el formulario de arriba.{% endif %}</p></div>
+  {% endfor %}
+</div>
+{% endblock %}
