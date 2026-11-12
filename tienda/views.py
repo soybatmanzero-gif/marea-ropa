@@ -2,6 +2,7 @@ import base64
 import json
 import uuid
 from functools import wraps
+from decimal import Decimal
 from math import asin, cos, radians, sin, sqrt
 
 from django.conf import settings
@@ -11,13 +12,15 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models import Avg, Count, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .forms import EncuestaForm, ProductoForm, RegistroForm, VideoForm
-from .models import Foto, Mensaje, Producto, RespuestaEncuesta, UbicacionUsuario, Video
+from .forms import EncuestaForm, PedidoForm, ProductoForm, RegistroForm, VideoForm
+from .models import Foto, Mensaje, Pedido, PedidoItem, Producto, RespuestaEncuesta, UbicacionUsuario, Video
 
 
 # ---------------------------------------------------------------- utilidades
@@ -109,6 +112,8 @@ def dashboard(request):
         "stock_total": Producto.objects.aggregate(s=Sum("stock"))["s"] or 0,
         "total_mensajes": Mensaje.objects.count(),
         "total_fotos": Foto.objects.count(),
+        "total_pedidos": Pedido.objects.count(),
+        "ventas_total": Pedido.objects.exclude(estado="cancelado").aggregate(s=Sum("total"))["s"] or 0,
         "total_respuestas": total_respuestas,
         "promedio_satisfaccion": RespuestaEncuesta.objects.aggregate(a=Avg("satisfaccion"))["a"],
         "porcentaje_recomienda": round(100 * si_recomienda / total_respuestas) if total_respuestas else None,
@@ -354,3 +359,144 @@ def autora(request):
             "maps_key": settings.GOOGLE_MAPS_API_KEY,
         },
     )
+
+
+# ------------------------------------------------------- carrito y compras
+def cliente_required(view):
+    """Solo clientes: el administrador gestiona pedidos, no compra."""
+
+    @wraps(view)
+    @login_required
+    def envuelta(request, *args, **kwargs):
+        if request.user.is_staff:
+            raise PermissionDenied
+        return view(request, *args, **kwargs)
+
+    return envuelta
+
+
+def _lineas_carrito(request):
+    """Devuelve las líneas del carrito (producto, cantidad, subtotal) y el total."""
+    carrito = request.session.get("carrito", {})
+    productos = Producto.objects.in_bulk([int(k) for k in carrito])
+    lineas, total = [], Decimal("0")
+    for k, cantidad in carrito.items():
+        p = productos.get(int(k))
+        if not p:
+            continue
+        subtotal = p.precio * cantidad
+        lineas.append({"producto": p, "cantidad": cantidad, "subtotal": subtotal})
+        total += subtotal
+    return lineas, total
+
+
+@cliente_required
+def carrito(request):
+    lineas, total = _lineas_carrito(request)
+    return render(request, "tienda/carrito.html", {"lineas": lineas, "total": total})
+
+
+@cliente_required
+@require_POST
+def carrito_agregar(request, pk):
+    p = get_object_or_404(Producto, pk=pk)
+    carrito = request.session.get("carrito", {})
+    actual = carrito.get(str(pk), 0)
+    if actual + 1 > p.stock:
+        messages.error(request, f"No hay más piezas de {p.nombre} disponibles.")
+    else:
+        carrito[str(pk)] = actual + 1
+        request.session["carrito"] = carrito
+        messages.success(request, f"{p.nombre} se agregó al carrito.")
+    destino = request.POST.get("siguiente", "")
+    if destino and url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}):
+        return redirect(destino)
+    return redirect("catalogo")
+
+
+@cliente_required
+@require_POST
+def carrito_actualizar(request, pk):
+    p = get_object_or_404(Producto, pk=pk)
+    carrito = request.session.get("carrito", {})
+    try:
+        cantidad = int(request.POST.get("cantidad", 1))
+    except ValueError:
+        cantidad = 1
+    if cantidad <= 0:
+        carrito.pop(str(pk), None)
+    else:
+        if cantidad > p.stock:
+            cantidad = p.stock
+            messages.info(request, f"Solo hay {p.stock} piezas de {p.nombre}.")
+        carrito[str(pk)] = cantidad
+    request.session["carrito"] = carrito
+    return redirect("carrito")
+
+
+@cliente_required
+@require_POST
+def carrito_quitar(request, pk):
+    carrito = request.session.get("carrito", {})
+    carrito.pop(str(pk), None)
+    request.session["carrito"] = carrito
+    return redirect("carrito")
+
+
+@cliente_required
+def comprar(request):
+    """Confirma el pedido: valida existencias, guarda el pedido y descuenta el stock."""
+    lineas, total = _lineas_carrito(request)
+    if not lineas:
+        messages.info(request, "Tu carrito está vacío.")
+        return redirect("catalogo")
+    form = PedidoForm(request.POST or None, initial={"nombre": request.user.get_full_name() or request.user.username})
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            productos = Producto.objects.select_for_update().in_bulk([l["producto"].pk for l in lineas])
+            for l in lineas:
+                if l["cantidad"] > productos[l["producto"].pk].stock:
+                    messages.error(request, f"Ya no hay suficientes piezas de {l['producto'].nombre}. Revisa tu carrito.")
+                    return redirect("carrito")
+            pedido = form.save(commit=False)
+            pedido.usuario = request.user
+            pedido.total = sum(productos[l["producto"].pk].precio * l["cantidad"] for l in lineas)
+            pedido.save()
+            for l in lineas:
+                p = productos[l["producto"].pk]
+                PedidoItem.objects.create(pedido=pedido, producto=p, nombre=p.nombre, precio=p.precio, cantidad=l["cantidad"])
+                p.stock -= l["cantidad"]
+                p.save(update_fields=["stock"])
+        request.session["carrito"] = {}
+        messages.success(request, "¡Gracias por tu compra! Tu pedido quedó registrado.")
+        return redirect("pedido_detalle", pk=pedido.pk)
+    return render(request, "tienda/comprar.html", {"form": form, "lineas": lineas, "total": total})
+
+
+@login_required
+def pedidos(request):
+    """Cliente: sus pedidos. Administrador: todos los pedidos."""
+    lista = Pedido.objects.select_related("usuario").prefetch_related("items")
+    if not request.user.is_staff:
+        lista = lista.filter(usuario=request.user)
+    return render(request, "tienda/pedidos.html", {"pedidos": lista, "estados": Pedido.ESTADOS})
+
+
+@login_required
+def pedido_detalle(request, pk):
+    pedido = get_object_or_404(Pedido.objects.prefetch_related("items"), pk=pk)
+    if pedido.usuario_id != request.user.id and not request.user.is_staff:
+        raise PermissionDenied
+    return render(request, "tienda/pedido_detalle.html", {"pedido": pedido, "estados": Pedido.ESTADOS})
+
+
+@admin_required
+@require_POST
+def pedido_estado(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    nuevo = request.POST.get("estado")
+    if nuevo in dict(Pedido.ESTADOS):
+        pedido.estado = nuevo
+        pedido.save(update_fields=["estado"])
+        messages.success(request, f"Pedido #{pedido.pk} marcado como {pedido.get_estado_display().lower()}.")
+    return redirect("pedidos")

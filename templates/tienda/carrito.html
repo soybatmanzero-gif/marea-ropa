@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Carrito{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">Tu compra</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Carrito</h1>
+  </div>
+  <a class="btn btn-contorno" href="{% url 'pedidos' %}">Mis pedidos</a>
+</div>
+
+{% if lineas %}
+<div class="tarjeta">
+  <table class="tabla">
+    <tr><th>Prenda</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
+    {% for l in lineas %}
+    <tr>
+      <td><b>{{ l.producto.nombre }}</b><div class="mono">Talla {{ l.producto.talla }}</div></td>
+      <td>${{ l.producto.precio }}</td>
+      <td>
+        <form method="post" action="{% url 'carrito_actualizar' l.producto.pk %}" style="display:flex;gap:.4rem;align-items:center">{% csrf_token %}
+          <input type="number" name="cantidad" value="{{ l.cantidad }}" min="0" max="{{ l.producto.stock }}" style="width:4.5rem">
+          <button class="btn btn-contorno btn-chico" type="submit">Actualizar</button>
+        </form>
+      </td>
+      <td>${{ l.subtotal }}</td>
+      <td>
+        <form method="post" action="{% url 'carrito_quitar' l.producto.pk %}">{% csrf_token %}
+          <button class="btn btn-peligro btn-chico" type="submit">Quitar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1.2rem">
+    <div><span class="mono">Total</span><div class="precio" style="font-size:2rem">${{ total }}</div></div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <a class="btn btn-contorno" href="{% url 'catalogo' %}">Seguir comprando</a>
+      <a class="btn btn-ambar" href="{% url 'comprar' %}">Continuar con la compra</a>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="tarjeta">
+  <p>Tu carrito está vacío.</p>
+  <a class="btn btn-ambar" href="{% url 'catalogo' %}">Ver el catálogo</a>
+</div>
+{% endif %}
+{% endblock %}

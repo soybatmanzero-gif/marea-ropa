@@ -32,6 +32,8 @@
       <a href="{% url 'fotos' %}" class="{% if ruta == 'fotos' %}activo{% endif %}">Fotos</a>
       <a href="{% url 'identidad' %}" class="{% if ruta == 'identidad' %}activo{% endif %}">Identidad</a>
       <a href="{% url 'autora' %}" class="{% if ruta == 'autora' %}activo{% endif %}">Autora</a>
+      {% if user.is_staff %}<a href="{% url 'pedidos' %}" class="{% if ruta == 'pedidos' or ruta == 'pedido_detalle' %}activo{% endif %}">Pedidos</a>
+      {% else %}<a href="{% url 'carrito' %}" class="{% if ruta == 'carrito' or ruta == 'comprar' or ruta == 'pedidos' or ruta == 'pedido_detalle' %}activo{% endif %}">Carrito{% if carrito_cantidad %} ({{ carrito_cantidad }}){% endif %}</a>{% endif %}
       {% endwith %}
     </nav>
     <div class="nav-usuario">

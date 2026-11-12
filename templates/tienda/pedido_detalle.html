@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Pedido #{{ pedido.pk }}{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">{{ pedido.creado|date:"d/m/Y H:i" }}</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">Pedido #{{ pedido.pk }}</h1>
+  </div>
+  <a class="btn btn-contorno" href="{% url 'pedidos' %}">{% if user.is_staff %}Todos los pedidos{% else %}Mis pedidos{% endif %}</a>
+</div>
+
+<div class="rejilla rejilla-2">
+  <div class="tarjeta">
+    <h3>Prendas</h3>
+    <table class="tabla">
+      <tr><th>Prenda</th><th>Precio</th><th>Cant.</th><th>Subtotal</th></tr>
+      {% for i in pedido.items.all %}<tr><td>{{ i.nombre }}</td><td>${{ i.precio }}</td><td>{{ i.cantidad }}</td><td>${{ i.subtotal }}</td></tr>{% endfor %}
+    </table>
+    <div style="margin-top:1rem"><span class="mono">Total</span><div class="precio" style="font-size:2rem">${{ pedido.total }}</div></div>
+  </div>
+  <div class="tarjeta">
+    <h3>Datos de entrega</h3>
+    <p><b>Estado:</b> <span class="chip {% if pedido.estado == 'pendiente' %}ambar{% endif %}">{{ pedido.get_estado_display }}</span></p>
+    {% if user.is_staff %}<p><b>Cliente:</b> {{ pedido.usuario.username }}</p>{% endif %}
+    <p><b>Recibe:</b> {{ pedido.nombre }}</p>
+    <p><b>Teléfono:</b> {{ pedido.telefono }}</p>
+    {% if pedido.notas %}<p><b>Notas:</b> {{ pedido.notas }}</p>{% endif %}
+    <p class="ayuda">La entrega se coordina en el punto de entrega de {{ TIENDA_NOMBRE }}; el pago se hace al recibir.</p>
+  </div>
+</div>
+{% endblock %}

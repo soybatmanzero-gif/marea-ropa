@@ -7,6 +7,14 @@
     <h3>{{ p.nombre }}</h3>
     <div class="mono">Talla {{ p.talla }} · {% if p.stock %}{{ p.stock }} en stock{% else %}Agotado{% endif %}</div>
     <div class="precio">${{ p.precio }}</div>
+    {% if not user.is_staff %}
+    {% if p.stock %}
+    <form method="post" action="{% url 'carrito_agregar' p.pk %}">{% csrf_token %}
+      <input type="hidden" name="siguiente" value="{{ request.get_full_path }}">
+      <button class="btn btn-ambar btn-chico" type="submit">Agregar al carrito</button>
+    </form>
+    {% else %}<button class="btn btn-contorno btn-chico" type="button" disabled>Agotado</button>{% endif %}
+    {% endif %}
     {% if user.is_staff and mostrar_acciones %}
     <div class="acciones">
       <a class="btn btn-contorno btn-chico" href="{% url 'producto_editar' p.pk %}">Editar</a>

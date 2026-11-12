@@ -59,6 +59,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "tienda.context.marca",
+                "tienda.context.carrito",
             ],
         },
     },
@@ -110,6 +111,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "login"
+
 # Permite que OpenStreetMap vea de qué sitio viene la petición (si no, bloquea el mapa con 403).
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 

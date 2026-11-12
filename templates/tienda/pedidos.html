@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}{% if user.is_staff %}Pedidos{% else %}Mis pedidos{% endif %}{% endblock %}
+{% block contenido %}
+<div class="cabecera-seccion">
+  <div>
+    <span class="mono">{% if user.is_staff %}Ventas{% else %}Tus compras{% endif %}</span>
+    <h1 style="font-size:clamp(2.4rem,5vw,3.6rem)">{% if user.is_staff %}Pedidos{% else %}Mis pedidos{% endif %}</h1>
+  </div>
+  {% if not user.is_staff %}<a class="btn btn-ambar" href="{% url 'catalogo' %}">Seguir comprando</a>{% endif %}
+</div>
+
+<div class="tarjeta">
+  <table class="tabla">
+    <tr><th>Pedido</th>{% if user.is_staff %}<th>Cliente</th>{% endif %}<th>Fecha</th><th>Prendas</th><th>Total</th><th>Estado</th></tr>
+    {% for p in pedidos %}
+    <tr>
+      <td><a href="{% url 'pedido_detalle' p.pk %}">#{{ p.pk }}</a></td>
+      {% if user.is_staff %}<td>{{ p.usuario.username }}</td>{% endif %}
+      <td>{{ p.creado|date:"d/m/Y H:i" }}</td>
+      <td>{% for i in p.items.all %}{{ i.cantidad }} × {{ i.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+      <td>${{ p.total }}</td>
+      <td>
+        {% if user.is_staff %}
+        <form method="post" action="{% url 'pedido_estado' p.pk %}" style="display:flex;gap:.4rem;align-items:center">{% csrf_token %}
+          <select name="estado">{% for v, n in estados %}<option value="{{ v }}" {% if p.estado == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+          <button class="btn btn-contorno btn-chico" type="submit">Guardar</button>
+        </form>
+        {% else %}<span class="chip {% if p.estado == 'pendiente' %}ambar{% endif %}">{{ p.get_estado_display }}</span>{% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">{% if user.is_staff %}Todavía no hay pedidos.{% else %}Aún no has hecho ningún pedido.{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

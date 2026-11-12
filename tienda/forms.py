@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Producto, RespuestaEncuesta, Video
+from .models import Pedido, Producto, RespuestaEncuesta, Video
 
 
 class RegistroForm(UserCreationForm):
@@ -48,3 +48,10 @@ class EncuestaForm(forms.ModelForm):
             "comentario": "¿Algo que quieras contarnos?",
         }
         widgets = {"comentario": forms.Textarea(attrs={"rows": 3})}
+
+
+class PedidoForm(forms.ModelForm):
+    class Meta:
+        model = Pedido
+        fields = ["nombre", "telefono", "notas"]
+        widgets = {"notas": forms.Textarea(attrs={"rows": 3})}

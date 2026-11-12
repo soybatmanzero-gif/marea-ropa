@@ -38,6 +38,7 @@ El rol de admin es `is_staff=True` (se asigna desde `/django-admin/`).
 | Blog (chat) | `blog.html` (se actualiza cada 3 s) |
 | Videos | `videos.html` (YouTube o .mp4; el admin los agrega) |
 | Encuesta | `encuesta.html`; resultados en el panel admin |
+| Compras | carrito, confirmar pedido y "Mis pedidos" (cliente); lista de pedidos y estado (admin) |
 | Tomar fotos | `fotos.html` (cámara del navegador o galería) |
 
 ## Personalizar

@@ -103,3 +103,40 @@ class Foto(models.Model):
 
     def __str__(self):
         return f"Foto de {self.usuario}"
+
+
+class Pedido(models.Model):
+    ESTADOS = [
+        ("pendiente", "Pendiente"),
+        ("entregado", "Entregado"),
+        ("cancelado", "Cancelado"),
+    ]
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pedidos")
+    nombre = models.CharField("Nombre de quien recibe", max_length=120)
+    telefono = models.CharField("Teléfono de contacto", max_length=20)
+    notas = models.TextField("Notas para la entrega (opcional)", blank=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="pendiente")
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado"]
+
+    def __str__(self):
+        return f"Pedido #{self.pk} de {self.usuario}"
+
+
+class PedidoItem(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name="items")
+    producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)
+    nombre = models.CharField(max_length=120)  # copia del nombre, por si el producto se borra después
+    precio = models.DecimalField(max_digits=8, decimal_places=2)
+    cantidad = models.PositiveIntegerField(default=1)
+
+    @property
+    def subtotal(self):
+        return self.precio * self.cantidad
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.nombre}"

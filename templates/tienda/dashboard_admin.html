@@ -10,6 +10,7 @@
   <div style="display:flex;gap:.6rem;flex-wrap:wrap">
     <a class="btn btn-ambar" href="{% url 'producto_crear' %}">+ Nuevo producto</a>
     <a class="btn btn-contorno" href="{% url 'catalogo' %}">Gestionar productos</a>
+    <a class="btn btn-ambar" href="{% url 'pedidos' %}">Ver pedidos</a>
   </div>
 </div>
 
@@ -18,6 +19,8 @@
   <div class="tarjeta kpi"><span class="mono">Productos</span><div class="valor ambar">{{ total_productos }}</div></div>
   <div class="tarjeta kpi"><span class="mono">Piezas en stock</span><div class="valor">{{ stock_total }}</div></div>
   <div class="tarjeta kpi"><span class="mono">Mensajes en el blog</span><div class="valor turq">{{ total_mensajes }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Pedidos</span><div class="valor turq">{{ total_pedidos }}</div></div>
+  <div class="tarjeta kpi"><span class="mono">Ventas totales</span><div class="valor ambar">${{ ventas_total|floatformat:0 }}</div></div>
   <div class="tarjeta kpi"><span class="mono">Fotos subidas</span><div class="valor">{{ total_fotos }}</div></div>
   <div class="tarjeta kpi"><span class="mono">Encuestas respondidas</span><div class="valor">{{ total_respuestas }}</div></div>
   <div class="tarjeta kpi"><span class="mono">Satisfacción promedio</span><div class="valor ambar">{% if promedio_satisfaccion %}{{ promedio_satisfaccion|floatformat:1 }}<small style="font-size:1.1rem"> / 5</small>{% else %}—{% endif %}</div></div>
